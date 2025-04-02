@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -6,6 +6,7 @@ import MapToggles from "./MapToggles";
 import L from "leaflet";
 import "./HomeTab.css";
 import HeatmapLayer from "./HeatmapLayer";
+import { getIconForCount } from "../utils/markerIconForPedestrian"; // Import the shared utility
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,6 +14,12 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+const eventIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/2738/2738880.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 });
 
 const HomeTab = ({
@@ -45,7 +52,7 @@ const HomeTab = ({
   toggles,
   setToggles,
 }) => {
-	const [selectedRoute, setSelectedRoute] = useState(null); // null = show all
+  const [selectedRoute, setSelectedRoute] = useState(null); // null = show all
 
   const fetchSuggestions = async (query, setSuggestions) => {
     if (query.length < 3) {
@@ -114,7 +121,20 @@ const HomeTab = ({
         setBusHeatmapData(data.bus_heatmap || []);
         setEventsData(data.events || []);
         setBikeData(data.bike_notifications?.notifications || []);
-        setPedestrianData(data.pedestrian?.[0]?.data || []);
+
+        // Format pedestrian data to include formattedTime and formattedDate
+        const formattedPedestrianData = (data.pedestrian?.[0]?.data || []).map(
+          (item) => ({
+            ...item,
+            formattedTime: new Date(item.datetime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            formattedDate: new Date(item.datetime).toLocaleDateString(),
+          })
+        );
+        setPedestrianData(formattedPedestrianData);
+
         setSelectedRoute(null); // Show all on initial load
       }
     } catch (error) {
@@ -323,12 +343,7 @@ const HomeTab = ({
               <Marker
                 key={event.id || index}
                 position={[coords.latitude, coords.longitude]}
-                icon={L.divIcon({
-                  className: "event-marker",
-                  html: `<div class="event-pin">📍</div>`,
-                  iconSize: [24, 24],
-                  iconAnchor: [12, 24],
-                })}
+                icon={eventIcon}
               >
                 <Popup>
                   <strong>{event.name}</strong>
@@ -395,19 +410,53 @@ const HomeTab = ({
             <Marker
               key={index}
               position={[point.latitude, point.longitude]}
-              icon={L.divIcon({
-                className: "pedestrian-marker",
-                html: `<div class="ped-icon">${point.predicted_count}</div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 30],
-              })}
+              icon={getIconForCount(point.predicted_count)} // Use shared utility
             >
               <Popup>
-                <strong>Location:</strong> {point.location}
-                <br />
-                <strong>Predicted Count:</strong> {point.predicted_count}
-                <br />
-                <small>{new Date(point.datetime).toLocaleString()}</small>
+                <div style={{ minWidth: "250px" }}>
+                  <h3 style={{ marginTop: 0 }}>{point.location}</h3>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <p>
+                        <strong>Pedestrian Count:</strong>
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "1.5em",
+                          fontWeight: "bold",
+                          color:
+                            point.predicted_count > 200
+                              ? "#e74c3c"
+                              : point.predicted_count > 100
+                              ? "#f39c12"
+                              : "#2ecc71",
+                        }}
+                      >
+                        {point.predicted_count}
+                      </p>
+                    </div>
+                    <div>
+                      <p>
+                        <strong>Time:</strong> {point.formattedTime}
+                      </p>
+                      <p>
+                        <strong>Date:</strong> {point.formattedDate}
+                      </p>
+                    </div>
+                  </div>
+                  <p>
+                    <strong>Coordinates:</strong>
+                  </p>
+                  <p>
+                    {point.latitude?.toFixed(5)},{" "}
+                    {point.longitude?.toFixed(5)}
+                  </p>
+                </div>
               </Popup>
             </Marker>
           ))}

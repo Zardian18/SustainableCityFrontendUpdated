@@ -158,20 +158,22 @@
 
 .route-buttons {
   position: absolute;
-  top: 90px;
-  left: 20px;
+  top: 25px;
+  left: 850px;
   z-index: 1000;
   display: flex;
   gap: 10px;
+ 
+
 }
 
 .route-buttons button {
   padding: 6px 12px;
   font-size: 14px;
-  border: none;
-  border-radius: 5px;
+  border: 3px solid #007bff;
+  border-radius: 15px;
   cursor: pointer;
-  background-color: #e6e6e6;
+  background-color: #ffffff;
   font-weight: 600;
   transition: background-color 0.3s ease;
 }
