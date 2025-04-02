@@ -75,6 +75,7 @@ import BusTab from "./components/BusTab";
 import BikesTab from "./components/BikesTab";
 import EventsTab from "./components/EventsTab";
 import PedestrianTab from "./components/PedestrianTab";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
@@ -124,6 +125,7 @@ function App() {
         {/* Dashboard route → Existing tabbed interface */}
         <Route path="/dashboard" element={<Dashboard />} />
 		<Route path="/auth" element={<AuthPage />} />
+		<Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Routes>
     </Router>
   );

@@ -19,7 +19,7 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
   
-  /* Left side - Form Card */
+ 
   .auth-card {
     flex: 1;
     padding: 50px;
@@ -96,7 +96,7 @@
     background-color: #27ae60;
   }
   
-  /* Right side - Image */
+  
   .auth-image {
     flex: 1;
     background-color: #000;
@@ -110,7 +110,7 @@
     border-bottom-right-radius: 16px;
   }
   
-  /* Optional: hide header inside auth */
+  
   .header {
    
   }
