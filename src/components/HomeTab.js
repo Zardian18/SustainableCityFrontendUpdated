@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -53,22 +53,58 @@ const HomeTab = ({
   setToggles,
 }) => {
   const [selectedRoute, setSelectedRoute] = useState(null); // null = show all
+  const [sourceLoading, setSourceLoading] = useState(false); // Local loading for source suggestions
+  const [destLoading, setDestLoading] = useState(false); // Local loading for destination suggestions
+  const [suggestionsCache, setSuggestionsCache] = useState({}); // Cache for suggestions
 
-  const fetchSuggestions = async (query, setSuggestions) => {
+  // Debounce function to limit API calls
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  // Fetch suggestions with caching
+  const fetchSuggestions = async (query, setSuggestions, setLocalLoading) => {
     if (query.length < 3) {
       setSuggestions([]);
+      setLocalLoading(false);
       return;
     }
+
+    // Check cache first
+    if (suggestionsCache[query]) {
+      setSuggestions(suggestionsCache[query]);
+      setLocalLoading(false);
+      return;
+    }
+
+    setLocalLoading(true);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
       );
       const data = await response.json();
+      // Update cache
+      setSuggestionsCache((prev) => ({ ...prev, [query]: data }));
       setSuggestions(data);
     } catch (error) {
       console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+    } finally {
+      setLocalLoading(false);
     }
   };
+
+  // Debounced version of fetchSuggestions
+  const debouncedFetchSuggestions = useCallback(
+    debounce((query, setSuggestions, setLocalLoading) => {
+      fetchSuggestions(query, setSuggestions, setLocalLoading);
+    }, 500), // 500ms delay
+    [suggestionsCache]
+  );
 
   const handleSearch = async () => {
     setLoading(true);
@@ -155,17 +191,20 @@ const HomeTab = ({
       <div className="search-bar">
         <div className="search-inputs">
           <div className="input-container">
-            <input
-              type="text"
-              placeholder="Source Location"
-              value={source}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSource(value);
-                fetchSuggestions(value, setSourceSuggestions);
-              }}
-              className="location-input"
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="Source Location"
+                value={source}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSource(value);
+                  debouncedFetchSuggestions(value, setSourceSuggestions, setSourceLoading);
+                }}
+                className="location-input"
+              />
+              {sourceLoading && <div className="input-spinner"></div>}
+            </div>
             {sourceSuggestions.length > 0 && (
               <ul className="suggestions-list">
                 {sourceSuggestions.map((suggestion) => (
@@ -189,17 +228,20 @@ const HomeTab = ({
           </div>
 
           <div className="input-container">
-            <input
-              type="text"
-              placeholder="Destination Location"
-              value={destination}
-              onChange={(e) => {
-                const value = e.target.value;
-                setDestination(value);
-                fetchSuggestions(value, setDestinationSuggestions);
-              }}
-              className="location-input"
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="Destination Location"
+                value={destination}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDestination(value);
+                  debouncedFetchSuggestions(value, setDestinationSuggestions, setDestLoading);
+                }}
+                className="location-input"
+              />
+              {destLoading && <div className="input-spinner"></div>}
+            </div>
             {destinationSuggestions.length > 0 && (
               <ul className="suggestions-list">
                 {destinationSuggestions.map((suggestion) => (
