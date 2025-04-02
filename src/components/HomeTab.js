@@ -6,7 +6,7 @@ import MapToggles from "./MapToggles";
 import L from "leaflet";
 import "./HomeTab.css";
 import HeatmapLayer from "./HeatmapLayer";
-import { getIconForCount } from "../utils/markerIconForEvent"; // Import the shared utility
+import { getIconForCount } from "../utils/markerIconForPedestrian"; // Import the shared utility
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
