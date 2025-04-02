@@ -159,7 +159,7 @@ import "leaflet/dist/leaflet.css";
 
 // Custom event icon
 const eventIcon = L.icon({
-	iconUrl: "https://cdn-icons-png.flaticon.com/512/2738/2738880.png",
+	iconUrl: "https://cdn-icons-png.flaticon.com/512/4285/4285436.png",
 	iconSize: [32, 32],
 	iconAnchor: [16, 32],
 });
@@ -183,7 +183,11 @@ const EventsTab = () => {
 				}
 
 				// Fetch fresh data
-				const response = await axios.get("/api/dashboard/");
+				// const response = await axios.get("/api/dashboard/");
+				const response = await axios.get(
+					"http://localhost:5000/api/dashboard/"
+				);
+
 				if (!response.data.events) {
 					throw new Error("No event data found");
 				}
