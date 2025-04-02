@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from "react";
 import "../pages/AuthPage.css";
 import authBanner from "../assets/signup.png";
@@ -77,11 +79,11 @@ const AuthPage = () => {
       const res = await axios.post("http://localhost:5000/api/auth/login", login_payload);
       alert(res.data.message);
 
-      
+      // Store username, token, and role (user_type) correctly in cookies
       Cookies.set("username", res.data.username);  
-      Cookies.set("token", res.data.token);  
+      Cookies.set("token", res.data.token); 
+      Cookies.set("user_type", res.data.user_type);  
 
-      
       if (rememberMe) {
         Cookies.set("rememberedUsername", formData.username, { expires: 7 });
         Cookies.set("rememberedPassword", formData.password, { expires: 7 });
@@ -94,11 +96,12 @@ const AuthPage = () => {
     } catch (err) {
       alert(err.response?.data?.error || "Login failed.");
     }
-  };
+};
+
+
 
   return (
     <div className="auth-container">
-     
       <header className="header">
         <h1 className="logo" onClick={() => window.location.href = "/"}>Éirflow</h1>
         <nav className="nav">
@@ -107,7 +110,6 @@ const AuthPage = () => {
         </nav>
       </header>
 
-   
       <div className="auth-layout">
         <div className="auth-card">
           <div className="auth-toggle">
@@ -154,26 +156,66 @@ const AuthPage = () => {
             </form>
           ) : (
             <form className="auth-form" onSubmit={handleRegister}>
-              <input type="text" name="supervisorName" placeholder="Supervisor Name" value={formData.supervisorName} onChange={handleChange} required />
+              <input
+                type="text"
+                name="supervisorName"
+                placeholder="Supervisor Name"
+                value={formData.supervisorName}
+                onChange={handleChange}
+                required
+              />
               <select name="role" value={formData.role} onChange={handleChange} required>
                 <option value="">Role</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="manager">Manager</option>
+                <option value="user">User</option> 
               </select>
-              <select name="mode" value={formData.mode} onChange={handleChange} required>
+              <select
+                name="mode"
+                value={formData.mode}
+                onChange={handleChange}
+                required
+                disabled={formData.role === "manager"}  
+              >
                 <option value="">Mode of Transport</option>
                 <option value="bus">Bus</option>
                 <option value="bike">Bike</option>
                 <option value="pedestrian">Events</option>
               </select>
-              <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleChange} required />
-              <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-              <select name="securityQuestion" value={formData.securityQuestion} onChange={handleChange} required>
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <select
+                name="securityQuestion"
+                value={formData.securityQuestion}
+                onChange={handleChange}
+                required
+              >
                 <option value="">Security Question</option>
                 <option value="pet">What is your pet's name?</option>
                 <option value="school">What was your first school?</option>
               </select>
-              <input type="text" name="securityAnswer" placeholder="Security Answer" value={formData.securityAnswer} onChange={handleChange} required />
+              <input
+                type="text"
+                name="securityAnswer"
+                placeholder="Security Answer"
+                value={formData.securityAnswer}
+                onChange={handleChange}
+                required
+              />
               <button type="submit" className="submit-btn">Register</button>
             </form>
           )}

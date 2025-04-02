@@ -14,6 +14,8 @@ import Cookies from "js-cookie";
 const Navigation = ({ activeTab, setActiveTab }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const username = Cookies.get("username");
+  const userRole = Cookies.get("user_type");
+
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -23,11 +25,9 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   };
 
   const handleLogout = () => {
-    
     Cookies.remove("token");
     Cookies.remove("username");
-
-    
+    Cookies.remove("user_type");
     window.location.href = "/auth";  
   };
 
@@ -90,9 +90,12 @@ const Navigation = ({ activeTab, setActiveTab }) => {
               onClose={handleMenuClose}
             >
               <MenuItem disabled>
-                <Typography variant="subtitle2">{username}</Typography> 
+                <Typography variant="subtitle2">{username}</Typography>
               </MenuItem>
-              <MenuItem onClick={handleLogout}>Logout</MenuItem> 
+              <MenuItem disabled>
+                <Typography variant="subtitle2">{userRole}</Typography> 
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </div>
         )}
