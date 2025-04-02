@@ -21,12 +21,11 @@ const PedestrianTab = () => {
 				if (cachedData) {
 					setPedestrianData(cachedData);
 					setHighPedestrianStreets(
-						cachedData.filter((loc) => loc.predicted_count > 200)
+						cachedData.filter((loc) => loc.predicted_count > 2000)
 					);
 					setLoading(false);
 					return;
 				}
-
 
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
@@ -65,7 +64,7 @@ const PedestrianTab = () => {
 
 				// Get only streets with pedestrian count > 200
 				const highTrafficStreets = data.filter(
-					(item) => item.predicted_count > 200
+					(item) => item.predicted_count > 2000
 				);
 
 				setPedestrianData(data);
@@ -176,10 +175,10 @@ const PedestrianTab = () => {
 													fontWeight: "bold",
 													color:
 														location.predicted_count >
-														200
+														2000
 															? "#e74c3c"
 															: location.predicted_count >
-															  100
+															  500
 															? "#f39c12"
 															: "#2ecc71",
 												}}
