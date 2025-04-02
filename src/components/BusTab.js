@@ -524,13 +524,7 @@ const BusHeatmap = () => {
 					return;
 				}
 
-<<<<<<<<< Temporary merge branch 1
 				const response = await axios.get("http://localhost:5000/api/dashboard/");
-=========
-				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/"
-				);
->>>>>>>>> Temporary merge branch 2
 				if (response.data?.bus_heatmap) {
 					const points = response.data.bus_heatmap.map((p) => [
 						p[0],
