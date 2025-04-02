@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -45,7 +45,8 @@ const HomeTab = ({
   toggles,
   setToggles,
 }) => {
-  // Fetch location suggestions from Nominatim API
+	const [selectedRoute, setSelectedRoute] = useState(null); // null = show all
+
   const fetchSuggestions = async (query, setSuggestions) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -62,76 +63,67 @@ const HomeTab = ({
     }
   };
 
-  // Handle search for source or destination and fetch routes
   const handleSearch = async () => {
-    setLoading(true); // Set loading to true when the request starts
+    setLoading(true);
     try {
-      // Geocode source location
+      let newSourcePos = null;
+      let newDestPos = null;
+
       if (source) {
-        const sourceResponse = await fetch(
+        const sourceRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${source}&limit=1`
         );
-        const sourceData = await sourceResponse.json();
+        const sourceData = await sourceRes.json();
         if (sourceData.length > 0) {
           const { lat, lon } = sourceData[0];
-          setSourcePosition([parseFloat(lat), parseFloat(lon)]);
+          newSourcePos = [parseFloat(lat), parseFloat(lon)];
+          setSourcePosition(newSourcePos);
         }
       }
 
-      // Geocode destination location
       if (destination) {
-        const destResponse = await fetch(
+        const destRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${destination}&limit=1`
         );
-        const destData = await destResponse.json();
+        const destData = await destRes.json();
         if (destData.length > 0) {
           const { lat, lon } = destData[0];
-          setDestinationPosition([parseFloat(lat), parseFloat(lon)]);
+          newDestPos = [parseFloat(lat), parseFloat(lon)];
+          setDestinationPosition(newDestPos);
         }
       }
 
-      // Fetch routes from backend if both source and destination are set
-      if (sourcePosition && destinationPosition) {
-        const sourceCoords = { lat: sourcePosition[0], lon: sourcePosition[1] };
-        const destCoords = { lat: destinationPosition[0], lon: destinationPosition[1] };
-        const apiUrl = `http://localhost:5000/api/dashboard/?start_lat=${sourceCoords.lat}&start_lon=${sourceCoords.lon}&end_lat=${destCoords.lat}&end_lon=${destCoords.lon}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+      if (newSourcePos && newDestPos) {
+        const apiUrl = `http://localhost:5000/api/dashboard/?start_lat=${newSourcePos[0]}&start_lon=${newSourcePos[1]}&end_lat=${newDestPos[0]}&end_lon=${newDestPos[1]}`;
+        const res = await fetch(apiUrl);
+        const data = await res.json();
 
-        // Update routes state with the fetched data
+        // Ensure route coordinates are in [lat, lon] array format
+        const formatCoords = (route) =>
+          (route || []).map((coord) =>
+            Array.isArray(coord) ? coord : [coord.lat, coord.lon]
+          );
+
         setRoutes({
-          normal: data.normal_route?.route || [],
-          sustainable: data.sustainable_route?.route || [],
-          clean: data.clean_route?.route || [],
+          normal: formatCoords(data.normal_route?.route),
+          sustainable: formatCoords(data.sustainable_route?.route),
+          clean: formatCoords(data.clean_route?.route),
         });
+
         setAqiData(data.air_pollution?.data || []);
         setBusHeatmapData(data.bus_heatmap || []);
         setEventsData(data.events || []);
         setBikeData(data.bike_notifications?.notifications || []);
         setPedestrianData(data.pedestrian?.[0]?.data || []);
+        setSelectedRoute(null); // Show all on initial load
       }
     } catch (error) {
       console.error("Error during search:", error);
     } finally {
-      setLoading(false); // Set loading to false when the request completes
+      setLoading(false);
     }
   };
 
-  // Handle input change for source
-  const handleSourceChange = (e) => {
-    const value = e.target.value;
-    setSource(value);
-    fetchSuggestions(value, setSourceSuggestions);
-  };
-
-  // Handle input change for destination
-  const handleDestinationChange = (e) => {
-    const value = e.target.value;
-    setDestination(value);
-    fetchSuggestions(value, setDestinationSuggestions);
-  };
-
-  // Handle suggestion click
   const handleSuggestionClick = (suggestion, setInput, setSuggestions, setPosition) => {
     setInput(suggestion.display_name);
     setSuggestions([]);
@@ -140,16 +132,18 @@ const HomeTab = ({
 
   return (
     <div className="map-container">
-      {/* Search Bar */}
       <div className="search-bar">
         <div className="search-inputs">
-          {/* Source Input */}
           <div className="input-container">
             <input
               type="text"
               placeholder="Source Location"
               value={source}
-              onChange={handleSourceChange}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSource(value);
+                fetchSuggestions(value, setSourceSuggestions);
+              }}
               className="location-input"
             />
             {sourceSuggestions.length > 0 && (
@@ -174,13 +168,16 @@ const HomeTab = ({
             )}
           </div>
 
-          {/* Destination Input */}
           <div className="input-container">
             <input
               type="text"
               placeholder="Destination Location"
               value={destination}
-              onChange={handleDestinationChange}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDestination(value);
+                fetchSuggestions(value, setDestinationSuggestions);
+              }}
               className="location-input"
             />
             {destinationSuggestions.length > 0 && (
@@ -205,14 +202,10 @@ const HomeTab = ({
             )}
           </div>
 
-          {/* Search Icon */}
-          <button onClick={handleSearch} className="search-button">
-            🔍
-          </button>
+          <button onClick={handleSearch} className="search-button">🔍</button>
         </div>
       </div>
 
-      {/* Loading Spinner */}
       {loading && (
         <div className="loading-spinner">
           <div className="spinner"></div>
@@ -221,48 +214,74 @@ const HomeTab = ({
 
       <MapToggles toggles={toggles} setToggles={setToggles} />
 
-      {/* Map */}
+      {/* ROUTE FILTER BUTTONS */}
+      <div className="route-buttons">
+        <button
+          className={selectedRoute === null ? "active" : ""}
+          onClick={() => setSelectedRoute(null)}
+        >
+          All Routes
+        </button>
+        <button
+          className={selectedRoute === "normal" ? "active" : ""}
+          onClick={() => setSelectedRoute("normal")}
+        >
+          Normal
+        </button>
+        <button
+          className={selectedRoute === "sustainable" ? "active" : ""}
+          onClick={() => setSelectedRoute("sustainable")}
+        >
+          Sustainable
+        </button>
+        <button
+          className={selectedRoute === "clean" ? "active" : ""}
+          onClick={() => setSelectedRoute("clean")}
+        >
+          Clean
+        </button>
+      </div>
+
       <MapContainer
-        center={[53.3498, -6.2603]} // Center on Dublin
+        center={[53.3498, -6.2603]}
         zoom={13}
         style={{ height: "calc(100vh - 64px)", width: "100%" }}
+        whenCreated={(map) => {
+          map.on("click", () => setSelectedRoute(null));
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="© OpenStreetMap contributors"
         />
 
-        {/* Source Marker */}
         {sourcePosition && (
           <Marker position={sourcePosition}>
             <Popup>Source: {source}</Popup>
           </Marker>
         )}
 
-        {/* Destination Marker */}
         {destinationPosition && (
           <Marker position={destinationPosition}>
             <Popup>Destination: {destination}</Popup>
           </Marker>
         )}
 
-        {/* Normal Route (Blue) */}
-        {routes.normal.length > 0 && (
-          <Polyline positions={routes.normal} color="blue" weight={4}>
+        {/* ROUTES DISPLAYED BASED ON selectedRoute */}
+        {routes.normal.length > 0 && (selectedRoute === null || selectedRoute === "normal") && (
+          <Polyline positions={routes.normal} color="blue" weight={5} opacity={1}>
             <Popup>Normal Route</Popup>
           </Polyline>
         )}
 
-        {/* Sustainable Route (Green) */}
-        {routes.sustainable.length > 0 && (
-          <Polyline positions={routes.sustainable} color="green" weight={4}>
+        {routes.sustainable.length > 0 && (selectedRoute === null || selectedRoute === "sustainable") && (
+          <Polyline positions={routes.sustainable} color="green" weight={5} opacity={1}>
             <Popup>Sustainable Route</Popup>
           </Polyline>
         )}
 
-        {/* Clean Route (Purple) */}
-        {routes.clean.length > 0 && (
-          <Polyline positions={routes.clean} color="purple" weight={4}>
+        {routes.clean.length > 0 && (selectedRoute === null || selectedRoute === "clean") && (
+          <Polyline positions={routes.clean} color="purple" weight={5} opacity={1}>
             <Popup>Clean Route</Popup>
           </Polyline>
         )}

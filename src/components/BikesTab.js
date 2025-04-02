@@ -48,7 +48,7 @@ const BikesTab = () => {
 				}
 
 				// Fetch fresh data
-				const response = await axios.get("/api/dashboard/");
+				const response = await axios.get("http://localhost:5000/api/dashboard/");
 				const bikeNotifications =
 					response.data.bike_notifications?.notifications || [];
 				const bikePredictions = response.data.predictions?.data || [];

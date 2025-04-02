@@ -21,7 +21,7 @@ const BusHeatmap = () => {
 					return;
 				}
 
-				const response = await axios.get("/api/dashboard/");
+				const response = await axios.get("http://localhost:5000/api/dashboard/");
 				if (response.data?.bus_heatmap) {
 					const points = response.data.bus_heatmap.map((p) => [
 						p[0],

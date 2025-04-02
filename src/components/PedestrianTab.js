@@ -48,7 +48,7 @@ const PedestrianTab = () => {
 				}
 
 				// Fetch fresh data
-				const response = await axios.get("/api/dashboard/");
+				const response = await axios.get("http://localhost:5000/api/dashboard/");
 				const pedestrianResponse = response.data.pedestrian?.[0];
 
 				// Validate API response structure
