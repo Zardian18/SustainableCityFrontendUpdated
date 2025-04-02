@@ -14,7 +14,11 @@ L.Icon.Default.mergeOptions({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
-
+const eventIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/2738/2738880.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
 const HomeTab = ({
   source,
   setSource,
@@ -323,12 +327,13 @@ const HomeTab = ({
               <Marker
                 key={event.id || index}
                 position={[coords.latitude, coords.longitude]}
-                icon={L.divIcon({
-                  className: "event-marker",
-                  html: `<div class="event-pin">📍</div>`,
-                  iconSize: [24, 24],
-                  iconAnchor: [12, 24],
-                })}
+                // icon={L.divIcon({
+                //   className: "event-marker",
+                //   html: `<div class="event-pin">📍</div>`,
+                //   iconSize: [24, 24],
+                //   iconAnchor: [12, 24],
+                // })}
+                icon={eventIcon}
               >
                 <Popup>
                   <strong>{event.name}</strong>
