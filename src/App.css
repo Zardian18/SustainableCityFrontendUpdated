@@ -68,3 +68,39 @@
 .leaflet-popup-content p {
   margin: 5px 0;
 }
+
+.loading-overlay {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(255, 165, 0, 0.9);
+  color: white;
+  border-radius: 5px;
+  z-index: 1000;
+}
+
+.error-banner {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px 25px;
+  background: rgba(255, 0, 0, 0.9);
+  color: white;
+  border-radius: 5px;
+  z-index: 1000;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.error-banner button {
+  background: white;
+  color: #333;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
