@@ -5,27 +5,7 @@ import L from "leaflet";
 import axios from "axios";
 import { getCachedData, setCachedData } from "../utils/cache";
 import "leaflet/dist/leaflet.css";
-
-// Different colored icons based on pedestrian count
-const getIconForCount = (count) => {
-	const color =
-		count > 200
-			? "red"
-			: count > 100
-			? "orange"
-			: count > 0
-			? "green"
-			: "gray";
-
-	return L.icon({
-		iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-		iconSize: [25, 41],
-		iconAnchor: [12, 41],
-		shadowUrl:
-			"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-		shadowSize: [41, 41],
-	});
-};
+import { getIconForCount } from "../utils/markerIconForPedestrian";
 
 const PedestrianTab = () => {
 	const [pedestrianData, setPedestrianData] = useState([]);
@@ -47,7 +27,7 @@ const PedestrianTab = () => {
 					return;
 				}
 
-				// Fetch fresh data
+
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
 					"http://localhost:5000/api/dashboard/"

@@ -1,0 +1,194 @@
+/* Map container */
+.map-container {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+  }
+  
+  /* Search bar container */
+  .search-bar {
+    position: absolute;
+    top: 10px;
+    left: 40px; /* Shifted to the left */
+    z-index: 1000;
+    background-color: transparent; /* Transparent background */
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  /* Container for inputs and search button */
+  .search-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between source, destination, and search button */
+  }
+  
+  /* Input container for relative positioning of suggestions */
+  .input-container {
+    position: relative;
+  }
+  
+  /* Input fields */
+  .location-input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px; /* Adjust width as needed */
+    background-color: rgba(255, 255, 255, 0.8); /* Slightly opaque white for visibility */
+    font-size: 14px;
+  }
+  
+  .location-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+  }
+  
+  /* Suggestions dropdown */
+  .suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1001;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Suggestion items */
+  .suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .suggestion-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  /* Search button */
+  .search-button {
+    padding: 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .search-button:hover {
+    background-color: #0056b3;
+  }
+
+  /* Loading spinner container */
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Spinner animation */
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 8px solid rgba(0, 0, 0, 0.1);
+  border-top: 8px solid #000000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+
+.aqi-circle {
+  background-color: #4caf50;
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.event-pin {
+  font-size: 20px;
+  background: white;
+  border-radius: 50%;
+  padding: 2px 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.bike-icon {
+  font-size: 18px;
+  background: white;
+  border-radius: 50%;
+  padding: 2px;
+  text-align: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+.ped-icon {
+  font-size: 12px;
+  font-weight: bold;
+  background: #ff9800;
+  color: white;
+  padding: 4px 6px;
+  border-radius: 50%;
+  text-align: center;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.route-buttons {
+  position: absolute;
+  top: 25px;
+  left: 850px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+ 
+
+}
+
+.route-buttons button {
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 3px solid #007bff;
+  border-radius: 15px;
+  cursor: pointer;
+  background-color: #ffffff;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.route-buttons button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Keyframes for spinner rotation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

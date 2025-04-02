@@ -183,6 +183,7 @@ const EventsTab = () => {
 				}
 
 				// Fetch fresh data
+
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
 					"http://localhost:5000/api/dashboard/"
