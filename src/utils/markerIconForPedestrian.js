@@ -3,11 +3,11 @@ import L from "leaflet";
 // Different colored icons based on pedestrian count
 export const getIconForCount = (count) => {
   const color =
-    count > 200
+    count > 2000
       ? "red"
-      : count > 100
+      : count > 500
       ? "orange"
-      : count > 0
+      : count >= 0
       ? "green"
       : "gray";
 
