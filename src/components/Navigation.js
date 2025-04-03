@@ -14,7 +14,7 @@ import Cookies from "js-cookie";
 const Navigation = ({ activeTab, setActiveTab }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const username = Cookies.get("username");
-  const userRole = Cookies.get("user_type");
+  const userRole = Cookies.get("role");
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);

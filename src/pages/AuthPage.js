@@ -5,6 +5,7 @@ import "../pages/AuthPage.css";
 import authBanner from "../assets/signup.png";
 import axios from "axios";
 import Cookies from "js-cookie";
+import {jwtDecode} from "jwt-decode";
 
 const AuthPage = () => {
   const query = new URLSearchParams(window.location.search);
@@ -69,21 +70,25 @@ const AuthPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     const login_payload = {
       username: formData.username,
       password: formData.password,
     };
-
+  
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", login_payload);
       alert(res.data.message);
-
-      // Store username, token, and role (user_type) correctly in cookies
+  
+      const token = res.data.token;
+      const decoded = jwtDecode(token);
+  
+      // Store in cookies
       Cookies.set("username", res.data.username);  
-      Cookies.set("token", res.data.token); 
-      Cookies.set("user_type", res.data.user_type);  
-
+      Cookies.set("token", token);
+      Cookies.set("role", decoded.role);      // extracted from token payload
+      Cookies.set("mode", decoded.mode);      // extracted from token payload
+  
       if (rememberMe) {
         Cookies.set("rememberedUsername", formData.username, { expires: 7 });
         Cookies.set("rememberedPassword", formData.password, { expires: 7 });
@@ -91,12 +96,12 @@ const AuthPage = () => {
         Cookies.remove("rememberedUsername");
         Cookies.remove("rememberedPassword");
       }
-
-      window.location.href = "/dashboard"; 
+  
+      window.location.href = "/dashboard";
     } catch (err) {
       alert(err.response?.data?.error || "Login failed.");
     }
-};
+  };
 
 
 
@@ -156,26 +161,26 @@ const AuthPage = () => {
             </form>
           ) : (
             <form className="auth-form" onSubmit={handleRegister}>
-              <input
-                type="text"
-                name="supervisorName"
-                placeholder="Supervisor Name"
-                value={formData.supervisorName}
-                onChange={handleChange}
-                required
-              />
               <select name="role" value={formData.role} onChange={handleChange} required>
                 <option value="">Role</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="manager">Manager</option>
                 <option value="user">User</option> 
               </select>
+              <input
+                type="text"
+                name="supervisorName"
+                placeholder={formData.role === "supervisor" ? "Supervisor Name" : formData.role === "manager" ? "Manager Name" : "User Name"}
+                value={formData.supervisorName}
+                onChange={handleChange}
+                required
+              />
               <select
                 name="mode"
                 value={formData.mode}
                 onChange={handleChange}
                 required
-                disabled={formData.role === "manager"}  
+                disabled={formData.role === "manager" || formData.role === "user"}  
               >
                 <option value="">Mode of Transport</option>
                 <option value="bus">Bus</option>
