@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -6,7 +6,7 @@ import MapToggles from "./MapToggles";
 import L from "leaflet";
 import "./HomeTab.css";
 import HeatmapLayer from "./HeatmapLayer";
-import { getIconForCount } from "../utils/markerIconForPedestrian"; // Import the shared utility
+import { getIconForCount } from "../utils/markerIconForPedestrian";
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,6 +14,12 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+const eventIcon2 = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/4285/4285436.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 });
 
 const eventIcon = L.icon({
@@ -53,29 +59,124 @@ const HomeTab = ({
   setToggles,
 }) => {
   const [selectedRoute, setSelectedRoute] = useState(null); // null = show all
+  const [sourceLoading, setSourceLoading] = useState(false); // Local loading for source suggestions
+  const [destLoading, setDestLoading] = useState(false); // Local loading for destination suggestions
+  const [suggestionsCache, setSuggestionsCache] = useState({}); // Cache for suggestions
 
-  const fetchSuggestions = async (query, setSuggestions) => {
+  // Debounce function to limit API calls
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  // Fetch suggestions with caching
+  const fetchSuggestions = async (query, setSuggestions, setLocalLoading) => {
     if (query.length < 3) {
       setSuggestions([]);
+      setLocalLoading(false);
       return;
     }
+
+    // Check cache first
+    if (suggestionsCache[query]) {
+      setSuggestions(suggestionsCache[query]);
+      setLocalLoading(false);
+      return;
+    }
+
+    setLocalLoading(true);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
       );
       const data = await response.json();
+      // Update cache
+      setSuggestionsCache((prev) => ({ ...prev, [query]: data }));
       setSuggestions(data);
     } catch (error) {
       console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+    } finally {
+      setLocalLoading(false);
     }
   };
 
-  const handleSearch = async () => {
+  // Debounced version of fetchSuggestions
+  const debouncedFetchSuggestions = useCallback(
+    debounce((query, setSuggestions, setLocalLoading) => {
+      fetchSuggestions(query, setSuggestions, setLocalLoading);
+    }, 500), // 500ms delay
+    [suggestionsCache]
+  );
+
+  // Function to fetch dashboard data (AQI, Heatmap, Events, Bike, Pedestrian)
+  const fetchDashboardData = async (startLat = null, startLon = null, endLat = null, endLon = null) => {
     setLoading(true);
     try {
-      let newSourcePos = null;
-      let newDestPos = null;
+      // Construct the API URL with or without coordinates
+      let apiUrl = "http://localhost:5000/api/dashboard/";
+      if (startLat && startLon && endLat && endLon) {
+        apiUrl += `?start_lat=${startLat}&start_lon=${startLon}&end_lat=${endLat}&end_lon=${endLon}`;
+      }
 
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+
+      // Ensure route coordinates are in [lat, lon] array format
+      const formatCoords = (route) =>
+        (route || []).map((coord) =>
+          Array.isArray(coord) ? coord : [coord.lat, coord.lon]
+        );
+
+      // Update routes only if coordinates were provided
+      if (startLat && startLon && endLat && endLon) {
+        setRoutes({
+          normal: formatCoords(data.normal_route?.route),
+          sustainable: formatCoords(data.sustainable_route?.route),
+          clean: formatCoords(data.clean_route?.route),
+        });
+      }
+
+      // Update other data regardless of coordinates
+      setAqiData(data.air_pollution?.data || []);
+      setBusHeatmapData(data.bus_heatmap || []);
+      setEventsData(data.events || []);
+      setBikeData(data.bike_notifications?.notifications || []);
+
+      // Format pedestrian data to include formattedTime and formattedDate
+      const formattedPedestrianData = (data.pedestrian?.[0]?.data || []).map(
+        (item) => ({
+          ...item,
+          formattedTime: new Date(item.datetime).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          formattedDate: new Date(item.datetime).toLocaleDateString(),
+        })
+      );
+      setPedestrianData(formattedPedestrianData);
+
+      setSelectedRoute(null); // Show all on initial load
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch initial data when the component mounts
+  useEffect(() => {
+    fetchDashboardData(); // Fetch data without coordinates on mount
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  const handleSearch = async () => {
+    let newSourcePos = null;
+    let newDestPos = null;
+
+    try {
       if (source) {
         const sourceRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${source}&limit=1`
@@ -101,46 +202,11 @@ const HomeTab = ({
       }
 
       if (newSourcePos && newDestPos) {
-        const apiUrl = `http://localhost:5000/api/dashboard/?start_lat=${newSourcePos[0]}&start_lon=${newSourcePos[1]}&end_lat=${newDestPos[0]}&end_lon=${newDestPos[1]}`;
-        const res = await fetch(apiUrl);
-        const data = await res.json();
-
-        // Ensure route coordinates are in [lat, lon] array format
-        const formatCoords = (route) =>
-          (route || []).map((coord) =>
-            Array.isArray(coord) ? coord : [coord.lat, coord.lon]
-          );
-
-        setRoutes({
-          normal: formatCoords(data.normal_route?.route),
-          sustainable: formatCoords(data.sustainable_route?.route),
-          clean: formatCoords(data.clean_route?.route),
-        });
-
-        setAqiData(data.air_pollution?.data || []);
-        setBusHeatmapData(data.bus_heatmap || []);
-        setEventsData(data.events || []);
-        setBikeData(data.bike_notifications?.notifications || []);
-
-        // Format pedestrian data to include formattedTime and formattedDate
-        const formattedPedestrianData = (data.pedestrian?.[0]?.data || []).map(
-          (item) => ({
-            ...item,
-            formattedTime: new Date(item.datetime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            formattedDate: new Date(item.datetime).toLocaleDateString(),
-          })
-        );
-        setPedestrianData(formattedPedestrianData);
-
-        setSelectedRoute(null); // Show all on initial load
+        // Fetch dashboard data with coordinates to include routes
+        await fetchDashboardData(newSourcePos[0], newSourcePos[1], newDestPos[0], newDestPos[1]);
       }
     } catch (error) {
       console.error("Error during search:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -155,17 +221,20 @@ const HomeTab = ({
       <div className="search-bar">
         <div className="search-inputs">
           <div className="input-container">
-            <input
-              type="text"
-              placeholder="Source Location"
-              value={source}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSource(value);
-                fetchSuggestions(value, setSourceSuggestions);
-              }}
-              className="location-input"
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="Source Location"
+                value={source}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSource(value);
+                  debouncedFetchSuggestions(value, setSourceSuggestions, setSourceLoading);
+                }}
+                className="location-input"
+              />
+              {sourceLoading && <div className="input-spinner"></div>}
+            </div>
             {sourceSuggestions.length > 0 && (
               <ul className="suggestions-list">
                 {sourceSuggestions.map((suggestion) => (
@@ -189,17 +258,20 @@ const HomeTab = ({
           </div>
 
           <div className="input-container">
-            <input
-              type="text"
-              placeholder="Destination Location"
-              value={destination}
-              onChange={(e) => {
-                const value = e.target.value;
-                setDestination(value);
-                fetchSuggestions(value, setDestinationSuggestions);
-              }}
-              className="location-input"
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="Destination Location"
+                value={destination}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDestination(value);
+                  debouncedFetchSuggestions(value, setDestinationSuggestions, setDestLoading);
+                }}
+                className="location-input"
+              />
+              {destLoading && <div className="input-spinner"></div>}
+            </div>
             {destinationSuggestions.length > 0 && (
               <ul className="suggestions-list">
                 {destinationSuggestions.map((suggestion) => (
@@ -343,7 +415,7 @@ const HomeTab = ({
               <Marker
                 key={event.id || index}
                 position={[coords.latitude, coords.longitude]}
-                icon={eventIcon}
+                icon={eventIcon2}
               >
                 <Popup>
                   <strong>{event.name}</strong>
