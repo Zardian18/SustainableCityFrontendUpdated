@@ -13,8 +13,9 @@ import Cookies from "js-cookie";
 
 const Navigation = ({ activeTab, setActiveTab }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const username = Cookies.get("username");
-  const userRole = Cookies.get("role");
+  const [username, setUsername] = useState(Cookies.get("username"));
+  const [role, setRole] = useState(Cookies.get("role"));
+  const [mode, setMode] = useState(Cookies.get("mode"));
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -42,28 +43,33 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           >
             Home
           </Button>
-          <Button
+          {role !== "user" && 
+          (<Button
             color="inherit"
             onClick={() => setActiveTab("weather")}
             sx={{ fontWeight: activeTab === "weather" ? "bold" : "normal" }}
           >
             Air Quality
-          </Button>
-          <Button
+          </Button>)}
+          {mode === "bus" || role === "manager" &&
+          (<Button
             color="inherit"
             onClick={() => setActiveTab("bus")}
             sx={{ fontWeight: activeTab === "bus" ? "bold" : "normal" }}
           >
             Bus
-          </Button>
-          <Button
+          </Button>)}
+          {mode === "bike" || role === "manager" &&
+          (<Button
             color="inherit"
             onClick={() => setActiveTab("bikes")}
             sx={{ fontWeight: activeTab === "bikes" ? "bold" : "normal" }}
           >
             Bike Stations
-          </Button>
-          <Button
+          </Button>)}
+          {mode === "pedestrian" || role === "manager" &&
+          (
+          <><Button
             color="inherit"
             onClick={() => setActiveTab("events")}
             sx={{ fontWeight: activeTab === "events" ? "bold" : "normal" }}
@@ -77,6 +83,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           >
             Pedestrian
           </Button>
+          </>)}
         </div>
 
         {username && (
@@ -93,7 +100,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
                 <Typography variant="subtitle2">{username}</Typography>
               </MenuItem>
               <MenuItem disabled>
-                <Typography variant="subtitle2">{userRole}</Typography> 
+                <Typography variant="subtitle2">{role}</Typography> 
               </MenuItem>
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
