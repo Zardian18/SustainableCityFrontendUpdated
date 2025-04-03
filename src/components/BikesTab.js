@@ -36,7 +36,11 @@ const BikesTab = () => {
 					setBikeStations(cachedData);
 					setHighDemandStations(
 						cachedData.filter(
-							(station) => station.demandRatio > 0.1 // Updated to 10%
+							(station) =>
+								(station.predicted_bikes -
+									station.current_bikes) /
+									station.total_capacity >
+								0.5
 						)
 					);
 					setLoading(false);
@@ -44,6 +48,7 @@ const BikesTab = () => {
 				}
 
 				// Fetch fresh data
+
 				const response = await axios.get(
 					"http://localhost:5000/api/dashboard/"
 				);
@@ -63,41 +68,25 @@ const BikesTab = () => {
 							pred.longitude === station.position.lng
 					);
 
-					let initialPredictedBikes =
-						predictedData?.predictions?.[0]?.bikes || 0;
-
-					// Modify predicted bikes if 0
-					if (initialPredictedBikes === 0) {
-						// Adjust by a random value between -3 and 10 but ensure it's less than total capacity
-						const randomAdjustment =
-							Math.floor(Math.random() * 14) - 3; // Range from -3 to 10
-						initialPredictedBikes = Math.min(
-							station.current_bikes + randomAdjustment,
-							station.total_capacity
-						);
-					}
-
-					// Calculate demand ratio based on adjusted predicted bikes
-					const demandRatio =
-						(initialPredictedBikes - station.current_bikes) /
-						station.total_capacity;
-
 					return {
 						id: station.station_id,
 						name: station.station_name,
 						position: [station.position.lat, station.position.lng],
 						current_bikes: station.current_bikes,
-						predicted_bikes: initialPredictedBikes,
+						predicted_bikes:
+							predictedData?.predictions?.[0]?.bikes || 0,
 						total_capacity: station.total_capacity,
-						demandRatio: demandRatio, // Updated demand ratio
+						demandRatio:
+							(station.predicted_bikes - station.current_bikes) /
+							station.total_capacity,
 						weeklyPredictions: predictedData?.predictions || [],
 					};
 				});
 
-				// Get high-demand stations based on updated condition (demand ratio > 10%)
+				// Get high-demand stations
 				const highDemand = stations.filter(
-					(station) => station.demandRatio > 0.1
-				); // Updated to 10%
+					(station) => station.demandRatio > 0.5
+				);
 
 				setBikeStations(stations);
 				setHighDemandStations(highDemand);
@@ -167,7 +156,7 @@ const BikesTab = () => {
 			{/* Right-side Map */}
 			<Box flex="7" height="100%" overflow="auto">
 				<MapContainer
-					center={[53.3498, -6.2603]}
+					center={[53.3498, -6.2603]} // Dublin center
 					zoom={14}
 					style={{ height: "70%", width: "100%" }}
 				>
@@ -183,61 +172,34 @@ const BikesTab = () => {
 							icon={bikeIcon}
 						>
 							<Popup>
-								{(() => {
-									// Adjust predicted bikes if it’s 0
-									let adjustedPrediction =
-										station.predicted_bikes;
-									if (adjustedPrediction === 0) {
-										const randomAdjustment =
-											Math.floor(Math.random() * 14) - 3; // Random value from -3 to 10
-										adjustedPrediction = Math.min(
-											station.current_bikes +
-												randomAdjustment,
-											station.total_capacity
-										);
-									}
-
-									// Calculate new demand ratio based on adjusted prediction
-									const newDemandRatio =
-										(adjustedPrediction -
-											station.current_bikes) /
-										station.total_capacity;
-
-									return (
-										<div style={{ minWidth: "250px" }}>
-											<h3 style={{ marginTop: 0 }}>
-												{station.name}
-											</h3>
-											<p>
-												<strong>Current Bikes:</strong>{" "}
-												{station.current_bikes}
-											</p>
-											<p>
-												<strong>
-													Predicted Bikes:
-												</strong>{" "}
-												{adjustedPrediction}
-											</p>
-											<p>
-												<strong>Capacity:</strong>{" "}
-												{station.total_capacity}
-											</p>
-											<p>
-												<strong>Demand Ratio:</strong>{" "}
-												{(newDemandRatio * 100).toFixed(
-													1
-												)}
-												%
-											</p>
-										</div>
-									);
-								})()}
+								<div style={{ minWidth: "250px" }}>
+									<h3 style={{ marginTop: 0 }}>
+										{station.name}
+									</h3>
+									<p>
+										<strong>Current Bikes:</strong>{" "}
+										{station.current_bikes}
+									</p>
+									<p>
+										<strong>Predicted Bikes:</strong>{" "}
+										{station.predicted_bikes}
+									</p>
+									<p>
+										<strong>Capacity:</strong>{" "}
+										{station.total_capacity}
+									</p>
+									<p>
+										<strong>Demand Ratio:</strong>{" "}
+										{(station.demandRatio * 100).toFixed(1)}
+										%
+									</p>
+								</div>
 							</Popup>
 						</Marker>
 					))}
 				</MapContainer>
 
-				{/* Weekly Predictions */}
+				{/* Scrollable Weekly Predictions */}
 				<Box
 					marginTop="20px"
 					height="300px"
@@ -263,7 +225,6 @@ const BikesTab = () => {
 										<Typography variant="h6">
 											{station.name}
 										</Typography>
-										{/* Predictions Table */}
 										<table
 											style={{
 												width: "100%",
@@ -305,44 +266,51 @@ const BikesTab = () => {
 											</thead>
 											<tbody>
 												{station.weeklyPredictions.map(
-													(pred, idx) => (
-														<tr key={idx}>
-															<td
-																style={{
-																	padding:
-																		"8px",
-																}}
-															>
-																{new Date(
-																	pred.date
-																).toLocaleDateString()}
-															</td>
-															<td
-																style={{
-																	padding:
-																		"8px",
-																	textAlign:
-																		"right",
-																}}
-															>
-																{Math.round(
-																	pred.bikes
-																)}
-															</td>
-															<td
-																style={{
-																	padding:
-																		"8px",
-																	textAlign:
-																		"right",
-																}}
-															>
-																{Math.round(
-																	pred.stands
-																)}
-															</td>
-														</tr>
-													)
+													(pred, idx) => {
+														// If bikes > stands, assign bikes = stands
+														const bikes = Math.min(
+															pred.bikes,
+															pred.stands
+														);
+														return (
+															<tr key={idx}>
+																<td
+																	style={{
+																		padding:
+																			"8px",
+																	}}
+																>
+																	{new Date(
+																		pred.date
+																	).toLocaleDateString()}
+																</td>
+																<td
+																	style={{
+																		padding:
+																			"8px",
+																		textAlign:
+																			"right",
+																	}}
+																>
+																	{Math.round(
+																		bikes
+																	)}
+																</td>
+																<td
+																	style={{
+																		padding:
+																			"8px",
+																		textAlign:
+																			"right",
+																	}}
+																>
+																	{Math.round(
+																		pred.stands
+																	)}
+																</td>
+															</tr>
+														);
+													}
 												)}
 											</tbody>
 										</table>
