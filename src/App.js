@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import Navigation from "./components/Navigation";
 import HomeTab from "./components/HomeTab";
 import WeatherTab from "./components/WeatherTab";
@@ -6,10 +8,16 @@ import BusTab from "./components/BusTab";
 import BikesTab from "./components/BikesTab";
 import EventsTab from "./components/EventsTab";
 import PedestrianTab from "./components/PedestrianTab";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 import { Box, Button } from "@mui/material";
 
-function App() {
+import LandingPage from "./pages/LandingPage";
+import AuthPage from "./pages/AuthPage";
+
+
+function Dashboard() {
   const [activeTab, setActiveTab] = useState("home");
+  
 
   // State for HomeTab
   const [source, setSource] = useState("");
@@ -39,10 +47,9 @@ function App() {
 
   const clearCache = () => {
     localStorage.clear();
-    window.location.reload(); // Optional: reload to see changes
+    window.location.reload();
     console.log("LocalStorage cache cleared");
   };
-
   return (
     <div className="App">
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -98,5 +105,29 @@ function App() {
     </div>
   );
 }
+
+  
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Default route → Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Dashboard route → Existing tabbed interface */}
+        <Route path="/dashboard" element={<Dashboard />} />
+		<Route path="/auth" element={<AuthPage />} />
+		<Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      </Routes>
+    </Router>
+
+
+  )
+}
+  
+
+  
+
 
 export default App;
