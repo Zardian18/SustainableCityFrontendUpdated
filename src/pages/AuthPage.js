@@ -6,6 +6,12 @@ import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import useAuthStore from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
+import { View, ViewOff } from "@carbon/icons-react";
+
+const validatePassword = (password) => {
+	const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+	return regex.test(password);
+  };
 
 const AuthPage = () => {
 	const navigate = useNavigate();
@@ -13,6 +19,9 @@ const AuthPage = () => {
 	const defaultMode = query.get("mode") === "signup" ? false : true;
 	const [isSignIn, setIsSignIn] = useState(defaultMode);
 	const [rememberMe, setRememberMe] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
+	const [registerError, setRegisterError] = useState("");
+
 	const [formData, setFormData] = useState({
 		supervisorName: "",
 		role: "",
@@ -47,6 +56,15 @@ const AuthPage = () => {
 
 	const handleRegister = async (e) => {
 		e.preventDefault();
+		setRegisterError("");
+
+    if (!validatePassword(formData.password)) {
+      setRegisterError(
+        "Password must be at least 8 characters long and include one uppercase letter, one number, and one special character."
+      );
+      return;
+    }
+
 
 		const register_payload = {
 			supervisor_name: formData.supervisorName,
@@ -67,8 +85,9 @@ const AuthPage = () => {
 			alert(res.data.message);
 			setIsSignIn(true);
 		} catch (err) {
-			alert(err.response?.data?.error || "Registration failed.");
-		}
+			setRegisterError(err.response?.data?.error || "Registration failed.");
+		  }
+	  
 	};
 
 	const handleLogin = async (e) => {
@@ -116,8 +135,18 @@ const AuthPage = () => {
 			// OR fallback:
 			// window.location.href = "/dashboard"; ❌ (this clears in-memory state without persist)
 		} catch (err) {
-			alert(err.response?.data?.error || "Login failed.");
-		}
+			const status = err.response?.status;
+			const errorMsg = err.response?.data?.error;
+		
+			if (status === 404) {
+			  alert("Username not found.");
+			} else if (status === 401) {
+			  alert("Invalid password.");
+			} else {
+			  alert(errorMsg || "Login failed.");
+			}
+		  }
+	  
 	};
 
 	return (
@@ -163,14 +192,20 @@ const AuthPage = () => {
 								onChange={handleChange}
 								required
 							/>
-							<input
-								type="password"
-								name="password"
-								placeholder="Password"
-								value={formData.password}
-								onChange={handleChange}
-								required
-							/>
+							<div className="password-container">
+  <input
+    type={showPassword ? "text" : "password"}
+    name="password"
+    placeholder="Password"
+    value={formData.password}
+    onChange={handleChange}
+    required
+  />
+  <span className="toggle-icon" onClick={() => setShowPassword(!showPassword)}>
+    {showPassword ? <ViewOff size={20} /> : <View size={20} />}
+  </span>
+</div>
+
 							<div className="auth-extras">
 								<label>
 									<input
@@ -235,14 +270,21 @@ const AuthPage = () => {
 								onChange={handleChange}
 								required
 							/>
+							<div className="password-container">
 							<input
-								type="password"
-								name="password"
-								placeholder="Password"
-								value={formData.password}
-								onChange={handleChange}
-								required
-							/>
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <span className="toggle-icon" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <ViewOff size={20} /> : <View size={20} />}
+                </span>
+
+</div>
+
 							<select
 								name="securityQuestion"
 								value={formData.securityQuestion}
@@ -261,11 +303,13 @@ const AuthPage = () => {
 								onChange={handleChange}
 								required
 							/>
+							{registerError && <div className="error-message">{registerError}</div>}
 							<button type="submit" className="submit-btn">
 								Register
 							</button>
 						</form>
 					)}
+					
 				</div>
 
 				<div className="auth-image">
