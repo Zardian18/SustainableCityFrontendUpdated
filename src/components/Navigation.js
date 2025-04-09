@@ -19,8 +19,9 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [anchorElNotif, setAnchorElNotif] = useState(null);
   const [notifications, setNotifications] = useState([]);
+	const [notificationData, setNotificationData] = useState([]);
   const { user, clearUser } = useAuthStore();
-  const { username, role, mode } = user;
+  const { username, role, mode } = user || {}; // Fallback to avoid undefined errors
 
   const handleMenuOpen = (event) => setAnchorElUser(event.currentTarget);
   const handleMenuClose = () => setAnchorElUser(null);
@@ -42,15 +43,17 @@ const Navigation = ({ activeTab, setActiveTab }) => {
       const allNotifications = response.data.notifications || [];
       // Filter notifications by supervisor's mode client-side
       const filteredNotifications = allNotifications.filter(
-        (notif) => notif.mode_of_transport === mode);
+        (notif) => notif.mode_of_transport === mode
+      );
       setNotifications(filteredNotifications);
+			setNotificationData(notifications.filter((notif) => notif.mode_of_transport === mode));
     } catch (err) {
       console.error("Error fetching notifications:", err);
     }
   };
 
   useEffect(() => {
-    if (role === "supervisor" && username && mode) { // Fetch for supervisors only
+    if (role === "supervisor" && username && mode) {
       fetchNotifications(); // Initial fetch
       const interval = setInterval(fetchNotifications, 5000); // Fetch every 5 seconds
       return () => clearInterval(interval); // Cleanup on unmount
@@ -76,17 +79,17 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   };
 
   const getNotificationMessage = (notif) => {
-    switch (notif.mode_of_transport) {
-      case "bus":
-        return `Bus ${notif.bus_id} reroute request - ${notif.status}`;
-      case "bike":
-        return `Bike reroute request ${notif.station_name} - ${notif.status}`; // Adjust if bike-specific fields are added
-      case "pedestrian":
-        return `Pedestrian event reroute request - ${notif.status}`; // Adjust if event-specific fields are added
-      default:
-        return `Unknown mode reroute request - ${notif.status}`;
-    }
-  };
+  switch (notif.mode_of_transport) {
+    case "bus":
+      return `Bus ${notif.bus_id} reroute request - ${notif.status}`;
+    case "bike":
+      return `Bike reroute request for ${notif.station_name || 'Station ' + notif.bike_id} - ${notif.status}`;
+    case "pedestrian":
+			return `Pedestrian request for ${notif.event_name}`;
+    default:
+      return `Unknown mode reroute request - ${notif.status}`;
+  }
+};
 
   return (
     <AppBar position="fixed">
@@ -132,7 +135,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
                 color="inherit"
                 onClick={() => setActiveTab("events")}
                 sx={{ fontWeight: activeTab === "events" ? "bold" : "normal" }}
-              >
+            >
                 Events
               </Button>
               <Button
