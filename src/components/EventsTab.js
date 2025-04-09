@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Box, Typography, Button } from "@mui/material";
@@ -10,7 +9,7 @@ import "leaflet/dist/leaflet.css";
 // Custom event icon
 const eventIcon = L.icon({
 	iconUrl: "https://cdn-icons-png.flaticon.com/512/4285/4285436.png",
-	iconSize: [32, 32],
+	iconSize: [24, 24],
 	iconAnchor: [16, 32],
 });
 
@@ -36,7 +35,7 @@ const EventsTab = () => {
 
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/"
+					"http://localhost:5000/api/dashboard/events"
 				);
 
 				if (!response.data.events) {
@@ -142,7 +141,7 @@ const EventsTab = () => {
 									color: "white",
 								}}
 							>
-								View Details
+								Request Garda
 							</Button>
 						</Box>
 					))

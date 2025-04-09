@@ -105,7 +105,7 @@ const BusHeatmap = () => {
 				}
 
 				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/"
+					"http://localhost:5000/api/dashboard/bus_heatmap"
 				);
 
 				if (response.data?.bus_heatmap) {
@@ -167,6 +167,7 @@ const CongestionMarkers = ({ zones }) => {
 	return null;
 };
 
+
 const RouteDisplay = ({ start, end, busId }) => {
 	const map = useMap();
 	const [routes, setRoutes] = useState(null);
@@ -175,18 +176,26 @@ const RouteDisplay = ({ start, end, busId }) => {
 	useEffect(() => {
 		if (!start || !end) return;
 
-		// Add bus and destination markers
-		const busMarker = L.marker(start, { icon: BusIcon })
-			.bindPopup(`Bus ${busId} Location`)
-			.addTo(map);
+		// Clear previous markers
+		markers.forEach((marker) => map.removeLayer(marker));
 
-		const destMarker = L.marker(end, { icon: DestinationIcon })
-			.bindPopup(`Bus ${busId} Destination`)
-			.addTo(map);
+		// Create new markers with custom icons
+		const busMarker = L.marker(start, {
+			icon: BusIcon,
+			title: `Bus ${busId} Start`,
+		}).bindPopup(`Bus ${busId} Location`);
 
+		const destMarker = L.marker(end, {
+			icon: DestinationIcon,
+			title: `Bus ${busId} Destination`,
+		}).bindPopup(`Bus ${busId} Destination`);
+
+		// Add markers to map and state
+		busMarker.addTo(map);
+		destMarker.addTo(map);
 		setMarkers([busMarker, destMarker]);
 
-		// Fit map to show both markers
+		// Fit map to show both markers with padding
 		const bounds = L.latLngBounds([start, end]);
 		map.fitBounds(bounds.pad(0.2));
 
@@ -201,24 +210,39 @@ const RouteDisplay = ({ start, end, busId }) => {
 
 		const fetchRoutes = async () => {
 			try {
-				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/",
-					{
-						params: {
-							start_lat: start[0],
-							start_lon: start[1],
-							end_lat: end[0],
-							end_lon: end[1],
-						},
-					}
-				);
+				const [normalRes, sustainableRes] = await Promise.all([
+					axios.get(
+						"http://localhost:5000/api/dashboard/normal_route",
+						{
+							params: {
+								start_lat: start[0],
+								start_lon: start[1],
+								end_lat: end[0],
+								end_lon: end[1],
+							},
+						}
+					),
+					axios.get(
+						"http://localhost:5000/api/dashboard/sustainable_route",
+						{
+							params: {
+								start_lat: start[0],
+								start_lon: start[1],
+								end_lat: end[0],
+								end_lon: end[1],
+							},
+						}
+					),
+				]);
 
 				setRoutes({
-					normal: response.data.normal_route?.route || [],
-					sustainable: response.data.sustainable_route?.route || [],
+					normal: normalRes.data.normal_route?.route || [],
+					sustainable:
+						sustainableRes.data.sustainable_route?.route || [],
 				});
 			} catch (err) {
 				console.error("Route Error:", err);
+				setRoutes(null);
 			}
 		};
 
@@ -229,21 +253,25 @@ const RouteDisplay = ({ start, end, busId }) => {
 		if (!routes) return;
 
 		const layers = [];
-		if (routes.normal.length) {
-			layers.push(
-				L.polyline(routes.normal, { color: "blue", weight: 3 }).addTo(
-					map
-				)
-			);
-		}
-		if (routes.sustainable.length) {
-			layers.push(
-				L.polyline(routes.sustainable, {
-					color: "green",
-					weight: 3,
-				}).addTo(map)
-			);
-		}
+		const colors = {
+			normal: "blue",
+			sustainable: "green",
+		};
+
+		// Add both route layers
+		Object.entries(routes).forEach(([routeType, coordinates]) => {
+			if (coordinates.length > 0) {
+				const layer = L.polyline(coordinates, {
+					color: colors[routeType],
+					weight: 4,
+					opacity: 0.8,
+				}).bindPopup(
+					`${routeType.replace("_", " ").toUpperCase()} Route`
+				);
+				layer.addTo(map);
+				layers.push(layer);
+			}
+		});
 
 		return () => layers.forEach((layer) => map.removeLayer(layer));
 	}, [routes, map]);
