@@ -80,7 +80,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
       case "bus":
         return `Bus ${notif.bus_id} reroute request - ${notif.status}`;
       case "bike":
-        return `Bike reroute request - ${notif.status}`; // Adjust if bike-specific fields are added
+        return `Bike reroute request ${notif.station_name} - ${notif.status}`; // Adjust if bike-specific fields are added
       case "pedestrian":
         return `Pedestrian event reroute request - ${notif.status}`; // Adjust if event-specific fields are added
       default:
