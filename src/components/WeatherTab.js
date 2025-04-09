@@ -120,10 +120,9 @@ const WeatherTab = () => {
 					return;
 				}
 
-
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/"
+					"http://localhost:5000/api/dashboard/air_pollution"
 				);
 
 				if (response.data?.air_pollution?.data) {

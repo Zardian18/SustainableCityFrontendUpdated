@@ -29,7 +29,7 @@ const PedestrianTab = () => {
 
 				// const response = await axios.get("/api/dashboard/");
 				const response = await axios.get(
-					"http://localhost:5000/api/dashboard/"
+					"http://localhost:5000/api/dashboard/pedestrian"
 				);
 
 				const pedestrianResponse = response.data.pedestrian?.[0];
