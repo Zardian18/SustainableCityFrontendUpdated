@@ -56,7 +56,7 @@ const CongestionIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
-// BusHeatmap, CongestionMarkers, RouteDisplay components remain unchanged
+// BusHeatmap and CongestionMarkers components remain unchanged
 const BusHeatmap = () => {
   const map = useMap();
   const [heatData, setHeatData] = useState([]);
@@ -116,7 +116,7 @@ const CongestionMarkers = ({ zones }) => {
   return null;
 };
 
-
+// RouteDisplay component (unchanged except for map reference)
 const RouteDisplay = ({ start, end, busId }) => {
   const map = useMap();
   const [routes, setRoutes] = useState(null);
@@ -125,116 +125,119 @@ const RouteDisplay = ({ start, end, busId }) => {
   useEffect(() => {
     if (!start || !end) return;
 
-		// Clear previous markers
-		markers.forEach((marker) => map.removeLayer(marker));
+    // Clear previous markers
+    markers.forEach((marker) => map.removeLayer(marker));
 
-		// Create new markers with custom icons
-		const busMarker = L.marker(start, {
-			icon: BusIcon,
-			title: `Bus ${busId} Start`,
-		}).bindPopup(`Bus ${busId} Location`);
+    // Create new markers with custom icons
+    const busMarker = L.marker(start, {
+      icon: BusIcon,
+      title: `Bus ${busId} Start`,
+    }).bindPopup(`Bus ${busId} Location`);
 
-		const destMarker = L.marker(end, {
-			icon: DestinationIcon,
-			title: `Bus ${busId} Destination`,
-		}).bindPopup(`Bus ${busId} Destination`);
+    const destMarker = L.marker(end, {
+      icon: DestinationIcon,
+      title: `Bus ${busId} Destination`,
+    }).bindPopup(`Bus ${busId} Destination`);
 
-		// Add markers to map and state
-		busMarker.addTo(map);
-		destMarker.addTo(map);
-		setMarkers([busMarker, destMarker]);
+    // Add markers to map and state
+    busMarker.addTo(map);
+    destMarker.addTo(map);
+    setMarkers([busMarker, destMarker]);
 
-		// Fit map to show both markers with padding
-		const bounds = L.latLngBounds([start, end]);
-		map.fitBounds(bounds.pad(0.2));
+    // Fit map to show both markers with padding
+    const bounds = L.latLngBounds([start, end]);
+    map.fitBounds(bounds.pad(0.2));
 
     const fetchRoutes = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/dashboard/", {
-          params: { start_lat: start[0], start_lon: start[1], end_lat: end[0], end_lon: end[1] },
-        });
+        const [normalRes, sustainableRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/dashboard/normal_route", {
+            params: { start_lat: start[0], start_lon: start[1], end_lat: end[0], end_lon: end[1] },
+          }),
+          axios.get("http://localhost:5000/api/dashboard/sustainable_route", {
+            params: { start_lat: start[0], start_lon: start[1], end_lat: end[0], end_lon: end[1] },
+          }),
+        ]);
+
         setRoutes({
-          normal: response.data.normal_route?.route || [],
-          sustainable: response.data.sustainable_route?.route || [],
+          normal: normalRes.data.normal_route?.route || [],
+          sustainable: sustainableRes.data.sustainable_route?.route || [],
         });
       } catch (err) {
         console.error("Route Error:", err);
+        setRoutes(null);
       }
     };
 
     fetchRoutes();
-  }, [start, end]);
+  }, [start, end, busId, map]);
 
   useEffect(() => {
-		const fetchRoutes = async () => {
-			try {
-				const [normalRes, sustainableRes] = await Promise.all([
-					axios.get(
-						"http://localhost:5000/api/dashboard/normal_route",
-						{
-							params: {
-								start_lat: start[0],
-								start_lon: start[1],
-								end_lat: end[0],
-								end_lon: end[1],
-							},
-						}
-					),
-					axios.get(
-						"http://localhost:5000/api/dashboard/sustainable_route",
-						{
-							params: {
-								start_lat: start[0],
-								start_lon: start[1],
-								end_lat: end[0],
-								end_lon: end[1],
-							},
-						}
-					),
-				]);
+    if (!routes) return;
 
-				setRoutes({
-					normal: normalRes.data.normal_route?.route || [],
-					sustainable:
-						sustainableRes.data.sustainable_route?.route || [],
-				});
-			} catch (err) {
-				console.error("Route Error:", err);
-				setRoutes(null);
-			}
-		};
+    const layers = [];
+    const colors = {
+      normal: "blue",
+      sustainable: "green",
+    };
 
-		fetchRoutes();
-	}, [start, end]);
+    Object.entries(routes).forEach(([routeType, coordinates]) => {
+      if (coordinates.length > 0) {
+        const layer = L.polyline(coordinates, {
+          color: colors[routeType],
+          weight: 4,
+          opacity: 0.8,
+        }).bindPopup(`${routeType.replace("_", " ").toUpperCase()} Route`);
+        layer.addTo(map);
+        layers.push(layer);
+      }
+    });
 
-	useEffect(() => {
-		if (!routes) return;
+    return () => layers.forEach((layer) => map.removeLayer(layer));
+  }, [routes, map]);
 
-		const layers = [];
-		const colors = {
-			normal: "blue",
-			sustainable: "green",
-		};
+  return null;
+};
 
-		// Add both route layers
-		Object.entries(routes).forEach(([routeType, coordinates]) => {
-			if (coordinates.length > 0) {
-				const layer = L.polyline(coordinates, {
-					color: colors[routeType],
-					weight: 4,
-					opacity: 0.8,
-				}).bindPopup(
-					`${routeType.replace("_", " ").toUpperCase()} Route`
-				);
-				layer.addTo(map);
-				layers.push(layer);
-			}
-		});
+// Reroute Button Control Component
+const RerouteButtonControl = ({ selectedBus, handleRerouteRequest, role }) => {
+  const map = useMap();
 
-		return () => layers.forEach((layer) => map.removeLayer(layer));
-	}, [routes, map]);
+  useEffect(() => {
+    const control = L.control({ position: "bottomleft" });
 
-	return null;
+    control.onAdd = () => {
+      const div = L.DomUtil.create("div", "leaflet-bar reroute-control");
+      div.innerHTML = `
+        <button
+          id="reroute-btn"
+          style="
+            padding: 8px 12px;
+            background-color: ${selectedBus && role === "manager" ? "#28a745" : "#ccc"};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: ${selectedBus && role === "manager" ? "pointer" : "not-allowed"};
+            font-size: 14px;
+          "
+          ${!selectedBus || role !== "manager" ? "disabled" : ""}
+        >
+          Send Reroute Request
+        </button>
+      `;
+      L.DomEvent.on(div.querySelector("#reroute-btn"), "click", () => {
+        if (selectedBus && role === "manager") {
+          handleRerouteRequest(selectedBus.busId, selectedBus.start, selectedBus.end);
+        }
+      });
+      return div;
+    };
+
+    control.addTo(map);
+    return () => control.remove();
+  }, [map, selectedBus, handleRerouteRequest, role]);
+
+  return null;
 };
 
 const BusTab = () => {
@@ -242,7 +245,7 @@ const BusTab = () => {
   const [selectedBus, setSelectedBus] = useState(null);
   const [busDestinations] = useState(() => new Map());
   const { user } = useAuthStore();
-  const { role, username } = user;
+  const { role, username } = user || {};
 
   useEffect(() => {
     const processHeatData = async () => {
@@ -297,20 +300,15 @@ const BusTab = () => {
   const handleRerouteRequest = async (busId, start, end) => {
     try {
       const rerouteData = {
-        busId: busId,              // Integer
-        start: {
-          lat: start[0],           // Float
-          lng: start[1]            // Float
-        },
-        end: {
-          lat: end[0],             // Float
-          lng: end[1]              // Float
-        },
-        manager_name: username     // String from useAuthStore
+        busId: busId,
+        start: { lat: start[0], lng: start[1] },
+        end: { lat: end[0], lng: end[1] },
+        manager_name: username,
+        mode_of_transport: "bus" // Explicitly set mode for clarity
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/notification/reroute-request", // Corrected endpoint
+        "http://localhost:5000/api/notification/reroute-request",
         rerouteData,
         {
           headers: {
@@ -369,22 +367,6 @@ const BusTab = () => {
                   >
                     Bus {busId}
                   </button>
-                  {role === "manager" && (
-                    <button
-                      onClick={() => handleRerouteRequest(busId, [zone.center.lat, zone.center.lng], getBusDestination(busId))}
-                      style={{
-                        padding: "8px 12px",
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      Send Reroute Request
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -397,6 +379,7 @@ const BusTab = () => {
           <BusHeatmap />
           <CongestionMarkers zones={congestionZones} />
           {selectedBus && <RouteDisplay key={selectedBus.busId} start={selectedBus.start} end={selectedBus.end} busId={selectedBus.busId} />}
+          <RerouteButtonControl selectedBus={selectedBus} handleRerouteRequest={handleRerouteRequest} role={role} />
         </MapContainer>
       </div>
     </div>

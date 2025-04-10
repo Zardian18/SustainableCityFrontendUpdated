@@ -19,7 +19,6 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [anchorElNotif, setAnchorElNotif] = useState(null);
   const [notifications, setNotifications] = useState([]);
-	const [notificationData, setNotificationData] = useState([]);
   const { user, clearUser } = useAuthStore();
   const { username, role, mode } = user || {}; // Fallback to avoid undefined errors
 
@@ -41,19 +40,27 @@ const Navigation = ({ activeTab, setActiveTab }) => {
     try {
       const response = await axios.get("http://localhost:5000/api/notification/fetch-notification");
       const allNotifications = response.data.notifications || [];
-      // Filter notifications by supervisor's mode client-side
-      const filteredNotifications = allNotifications.filter(
-        (notif) => notif.mode_of_transport === mode
-      );
-      setNotifications(filteredNotifications);
-			setNotificationData(notifications.filter((notif) => notif.mode_of_transport === mode));
+
+      if (role === "supervisor") {
+        // Supervisors see notifications matching their mode
+        const filteredNotifications = allNotifications.filter(
+          (notif) => notif.mode_of_transport === mode
+        );
+        setNotifications(filteredNotifications);
+      } else if (role === "manager") {
+        // Managers see their own notifications
+        const managerNotifications = allNotifications.filter(
+          (notif) => notif.manager_name === username
+        );
+        setNotifications(managerNotifications);
+      }
     } catch (err) {
       console.error("Error fetching notifications:", err);
     }
   };
 
   useEffect(() => {
-    if (role === "supervisor" && username && mode) {
+    if ((role === "supervisor" && mode) || (role === "manager" && username)) {
       fetchNotifications(); // Initial fetch
       const interval = setInterval(fetchNotifications, 5000); // Fetch every 5 seconds
       return () => clearInterval(interval); // Cleanup on unmount
@@ -79,17 +86,19 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   };
 
   const getNotificationMessage = (notif) => {
-  switch (notif.mode_of_transport) {
-    case "bus":
-      return `Bus ${notif.bus_id} reroute request - ${notif.status}`;
-    case "bike":
-      return `Bike reroute request for ${notif.station_name || 'Station ' + notif.bike_id} - ${notif.status}`;
-    case "pedestrian":
-			return `Pedestrian request for ${notif.event_name}`;
-    default:
-      return `Unknown mode reroute request - ${notif.status}`;
-  }
-};
+    switch (notif.mode_of_transport) {
+      case "bus":
+        return `Bus ${notif.bus_id} reroute request - ${notif.status}`;
+      case "bike":
+        return `Bike reroute request for ${notif.station_name || 'Station ' + notif.bike_id} - ${notif.status}`;
+      case "pedestrian":
+        return notif.event_name
+          ? `Garda request for ${notif.event_name} - ${notif.status}`
+          : `Pedestrian reroute request - ${notif.status}`;
+      default:
+        return `Unknown mode reroute request - ${notif.status}`;
+    }
+  };
 
   return (
     <AppBar position="fixed">
@@ -135,7 +144,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
                 color="inherit"
                 onClick={() => setActiveTab("events")}
                 sx={{ fontWeight: activeTab === "events" ? "bold" : "normal" }}
-            >
+              >
                 Events
               </Button>
               <Button
@@ -151,7 +160,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
 
         {username && (
           <div>
-            {role === "supervisor" && mode && (
+            {(role === "supervisor" || role === "manager") && (
               <>
                 <IconButton color="inherit" onClick={handleNotifOpen}>
                   <NotificationsIcon />
@@ -168,13 +177,13 @@ const Navigation = ({ activeTab, setActiveTab }) => {
                     notifications.map((notif) => (
                       <MenuItem
                         key={notif.notification_id}
-                        disabled={notif.status !== "pending"}
+                        disabled={notif.status !== "pending" || role !== "supervisor"} // Disable for managers or non-pending
                       >
                         <Box sx={{ width: "100%" }}>
                           <Typography variant="body2">
                             {getNotificationMessage(notif)}
                           </Typography>
-                          {notif.status === "pending" && (
+                          {role === "supervisor" && notif.status === "pending" && (
                             <Box sx={{ mt: 1 }}>
                               <Button
                                 variant="contained"
