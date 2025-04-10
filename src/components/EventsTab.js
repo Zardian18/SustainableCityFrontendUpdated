@@ -102,7 +102,7 @@ const EventsTab = () => {
       console.log("Reroute request sent successfully:", response.data);
       const notification = response.data.notification;
       alert(
-        `Garda request for Event ${eventId} (${eventName}) sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`
+        `Garda request for Event (${eventName}) sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`
       );
     } catch (err) {
       console.error("Error sending reroute request:", err);
