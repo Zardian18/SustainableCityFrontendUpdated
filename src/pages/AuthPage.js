@@ -11,7 +11,7 @@ import { View, ViewOff } from "@carbon/icons-react";
 const validatePassword = (password) => {
 	const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 	return regex.test(password);
-  };
+};
 
 const AuthPage = () => {
 	const navigate = useNavigate();
@@ -58,13 +58,12 @@ const AuthPage = () => {
 		e.preventDefault();
 		setRegisterError("");
 
-    if (!validatePassword(formData.password)) {
-      setRegisterError(
-        "Password must be at least 8 characters long and include one uppercase letter, one number, and one special character."
-      );
-      return;
-    }
-
+		if (!validatePassword(formData.password)) {
+			setRegisterError(
+				"Password must be at least 8 characters long and include one uppercase letter, one number, and one special character."
+			);
+			return;
+		}
 
 		const register_payload = {
 			supervisor_name: formData.supervisorName,
@@ -82,12 +81,10 @@ const AuthPage = () => {
 				"http://localhost:5000/api/auth/register",
 				register_payload
 			);
-			alert(res.data.message);
 			setIsSignIn(true);
 		} catch (err) {
 			setRegisterError(err.response?.data?.error || "Registration failed.");
-		  }
-	  
+		}
 	};
 
 	const handleLogin = async (e) => {
@@ -103,7 +100,6 @@ const AuthPage = () => {
 				"http://localhost:5000/api/auth/login",
 				login_payload
 			);
-			alert(res.data.message);
 
 			const token = res.data.token;
 			const decoded = jwtDecode(token);
@@ -131,22 +127,21 @@ const AuthPage = () => {
 				Cookies.remove("rememberedPassword");
 			}
 
-			navigate("/dashboard"); // ⬅️ If using React Router
+			navigate("/dashboard");
 			// OR fallback:
 			// window.location.href = "/dashboard"; ❌ (this clears in-memory state without persist)
 		} catch (err) {
 			const status = err.response?.status;
 			const errorMsg = err.response?.data?.error;
-		
+
 			if (status === 404) {
-			  alert("Username not found.");
+				alert("Username not found.");
 			} else if (status === 401) {
-			  alert("Invalid password.");
+				alert("Invalid password.");
 			} else {
-			  alert(errorMsg || "Login failed.");
+				alert(errorMsg || "Login failed.");
 			}
-		  }
-	  
+		}
 	};
 
 	return (
@@ -193,18 +188,21 @@ const AuthPage = () => {
 								required
 							/>
 							<div className="password-container">
-  <input
-    type={showPassword ? "text" : "password"}
-    name="password"
-    placeholder="Password"
-    value={formData.password}
-    onChange={handleChange}
-    required
-  />
-  <span className="toggle-icon" onClick={() => setShowPassword(!showPassword)}>
-    {showPassword ? <ViewOff size={20} /> : <View size={20} />}
-  </span>
-</div>
+								<input
+									type={showPassword ? "text" : "password"}
+									name="password"
+									placeholder="Password"
+									value={formData.password}
+									onChange={handleChange}
+									required
+								/>
+								<span
+									className="toggle-icon"
+									onClick={() => setShowPassword(!showPassword)}
+								>
+									{showPassword ? <ViewOff size={20} /> : <View size={20} />}
+								</span>
+							</div>
 
 							<div className="auth-extras">
 								<label>
@@ -271,19 +269,21 @@ const AuthPage = () => {
 								required
 							/>
 							<div className="password-container">
-							<input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
-                <span className="toggle-icon" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <ViewOff size={20} /> : <View size={20} />}
-                </span>
-
-</div>
+								<input
+									type={showPassword ? "text" : "password"}
+									name="password"
+									placeholder="Password"
+									value={formData.password}
+									onChange={handleChange}
+									required
+								/>
+								<span
+									className="toggle-icon"
+									onClick={() => setShowPassword(!showPassword)}
+								>
+									{showPassword ? <ViewOff size={20} /> : <View size={20} />}
+								</span>
+							</div>
 
 							<select
 								name="securityQuestion"
@@ -303,13 +303,14 @@ const AuthPage = () => {
 								onChange={handleChange}
 								required
 							/>
-							{registerError && <div className="error-message">{registerError}</div>}
+							{registerError && (
+								<div className="error-message">{registerError}</div>
+							)}
 							<button type="submit" className="submit-btn">
 								Register
 							</button>
 						</form>
 					)}
-					
 				</div>
 
 				<div className="auth-image">
