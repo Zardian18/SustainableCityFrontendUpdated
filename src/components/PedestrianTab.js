@@ -7,7 +7,6 @@ import { getCachedData, setCachedData } from "../utils/cache";
 import "leaflet/dist/leaflet.css";
 import { getIconForCount } from "../utils/markerIconForPedestrian";
 import useAuthStore from "../store/useAuthStore";
-// Import react-toastify
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -238,4 +237,4 @@ const PedestrianTab = () => {
   );
 };
 
-export default PedestrianTab;
+export default PedestrianTab;   
