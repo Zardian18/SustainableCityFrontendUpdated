@@ -6,6 +6,9 @@ import axios from "axios";
 import { getCachedData, setCachedData } from "../utils/cache";
 import "leaflet/dist/leaflet.css";
 import useAuthStore from "../store/useAuthStore";
+// Import react-toastify
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -107,7 +110,7 @@ const BikesTab = () => {
         end: { lat: endPosition[0], lng: endPosition[1] },
         manager_name: username,
         mode_of_transport: "bike",
-        station_name: stationName,  // Include station name
+        station_name: stationName, // Include station name
       };
 
       const response = await axios.post(
@@ -122,13 +125,30 @@ const BikesTab = () => {
 
       console.log("Reroute request sent successfully:", response.data);
       const notification = response.data.notification;
-      alert(
-        `Reroute request for Bike Station ${bikeId} (${stationName}) sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`
+      // Show success toast
+      toast.success(
+        `Reroute request for Bike Station ${bikeId} (${stationName}) sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`,
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
       );
     } catch (err) {
       console.error("Error sending reroute request:", err);
       const errorMessage = err.response?.data?.error || "Network error - ensure backend is running";
-      alert(`Failed to send reroute request: ${errorMessage}`);
+      // Show error toast
+      toast.error(`Failed to send reroute request: ${errorMessage}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -137,6 +157,18 @@ const BikesTab = () => {
 
   return (
     <Box display="flex" height="90vh" padding="10px">
+      {/* ToastContainer for rendering toast notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <Box
         flex="3"
         padding="10px"
@@ -169,7 +201,7 @@ const BikesTab = () => {
                   color="primary"
                   fullWidth
                   sx={{ marginTop: "10px", color: "white" }}
-                  onClick={() => handleRerouteRequest(station.id, station.position, station.name)}  // Pass station.name
+                  onClick={() => handleRerouteRequest(station.id, station.position, station.name)} // Pass station.name
                 >
                   Request More Bikes
                 </Button>

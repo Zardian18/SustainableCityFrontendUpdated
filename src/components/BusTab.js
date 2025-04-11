@@ -6,6 +6,9 @@ import { getCachedData, setCachedData } from "../utils/cache";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import useAuthStore from "../store/useAuthStore";
+// Import react-toastify
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Dublin configuration
 const DUBLIN_CENTER = [53.3498, -6.2603];
@@ -56,7 +59,7 @@ const CongestionIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
-// BusHeatmap and CongestionMarkers components remain unchanged
+// BusHeatmap component (unchanged)
 const BusHeatmap = () => {
   const map = useMap();
   const [heatData, setHeatData] = useState([]);
@@ -98,6 +101,7 @@ const BusHeatmap = () => {
   return null;
 };
 
+// CongestionMarkers component (unchanged)
 const CongestionMarkers = ({ zones }) => {
   const map = useMap();
 
@@ -116,7 +120,7 @@ const CongestionMarkers = ({ zones }) => {
   return null;
 };
 
-// RouteDisplay component (unchanged except for map reference)
+// RouteDisplay component (unchanged)
 const RouteDisplay = ({ start, end, busId }) => {
   const map = useMap();
   const [routes, setRoutes] = useState(null);
@@ -199,7 +203,7 @@ const RouteDisplay = ({ start, end, busId }) => {
   return null;
 };
 
-// Reroute Button Control Component
+// RerouteButtonControl component (unchanged)
 const RerouteButtonControl = ({ selectedBus, handleRerouteRequest, role }) => {
   const map = useMap();
 
@@ -304,7 +308,7 @@ const BusTab = () => {
         start: { lat: start[0], lng: start[1] },
         end: { lat: end[0], lng: end[1] },
         manager_name: username,
-        mode_of_transport: "bus" // Explicitly set mode for clarity
+        mode_of_transport: "bus", // Explicitly set mode for clarity
       };
 
       const response = await axios.post(
@@ -319,18 +323,47 @@ const BusTab = () => {
 
       console.log("Reroute request sent successfully:", response.data);
       const notification = response.data.notification;
-      alert(
-        `Reroute request for Bus ${busId} sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`
+      // Show success toast
+      toast.success(
+        `Reroute request for Bus ${busId} sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`,
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
       );
     } catch (err) {
       console.error("Error sending reroute request:", err);
       const errorMessage = err.response?.data?.error || "Network error - ensure backend is running";
-      alert(`Failed to send reroute request: ${errorMessage}`);
+      // Show error toast
+      toast.error(`Failed to send reroute request: ${errorMessage}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 64px)" }}>
+      {/* ToastContainer for rendering toast notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <div
         style={{
           width: "300px",
@@ -375,11 +408,25 @@ const BusTab = () => {
       </div>
       <div style={{ flex: 1 }}>
         <MapContainer center={DUBLIN_CENTER} zoom={13} style={{ height: "100%", width: "100%" }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="© OpenStreetMap contributors"
+          />
           <BusHeatmap />
           <CongestionMarkers zones={congestionZones} />
-          {selectedBus && <RouteDisplay key={selectedBus.busId} start={selectedBus.start} end={selectedBus.end} busId={selectedBus.busId} />}
-          <RerouteButtonControl selectedBus={selectedBus} handleRerouteRequest={handleRerouteRequest} role={role} />
+          {selectedBus && (
+            <RouteDisplay
+              key={selectedBus.busId}
+              start={selectedBus.start}
+              end={selectedBus.end}
+              busId={selectedBus.busId}
+            />
+          )}
+          <RerouteButtonControl
+            selectedBus={selectedBus}
+            handleRerouteRequest={handleRerouteRequest}
+            role={role}
+          />
         </MapContainer>
       </div>
     </div>
