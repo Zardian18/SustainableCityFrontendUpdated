@@ -6,14 +6,17 @@ import axios from "axios";
 import { getCachedData, setCachedData } from "../utils/cache";
 import "leaflet/dist/leaflet.css";
 import { getIconForCount } from "../utils/markerIconForPedestrian";
-import useAuthStore from "../store/useAuthStore"; // Import useAuthStore
+import useAuthStore from "../store/useAuthStore";
+// Import react-toastify
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const PedestrianTab = () => {
   const [pedestrianData, setPedestrianData] = useState([]);
   const [highPedestrianStreets, setHighPedestrianStreets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuthStore(); // Get user data
+  const { user } = useAuthStore();
   const { username, role } = user || {};
 
   useEffect(() => {
@@ -71,7 +74,7 @@ const PedestrianTab = () => {
         end: { lat: endPosition[0], lng: endPosition[1] },
         manager_name: username,
         mode_of_transport: "pedestrian",
-        event_name: streetName, // Use street name as event_name
+        event_name: streetName,
       };
 
       const response = await axios.post(
@@ -86,13 +89,30 @@ const PedestrianTab = () => {
 
       console.log("Reroute request sent successfully:", response.data);
       const notification = response.data.notification;
-      alert(
-        `Garda request for street ${streetName} sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`
+      // Use toast with the same message as the original alert
+      toast.success(
+        `Garda request for street ${streetName} sent successfully!\nStatus: ${notification.status}\nTimestamp: ${notification.timestamp}`,
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
       );
     } catch (err) {
       console.error("Error sending reroute request:", err);
       const errorMessage = err.response?.data?.error || "Network error - ensure backend is running";
-      alert(`Failed to send Garda request: ${errorMessage}`);
+      // Use toast with the same error message as the original alert
+      toast.error(`Failed to send Garda request: ${errorMessage}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -101,6 +121,18 @@ const PedestrianTab = () => {
 
   return (
     <Box display="flex" height="90vh" padding="10px">
+      {/* ToastContainer for rendering toast notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <Box
         flex="3"
         padding="10px"
