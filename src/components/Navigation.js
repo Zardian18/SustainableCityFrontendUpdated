@@ -131,13 +131,13 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           ? `Bike reroute request for ${notif.station_name || 'Station ' + notif.bike_id} - ${notif.status}`
           : `Bike reroute request for ${notif.station_name || 'Station ' + notif.bike_id}`;
       case "pedestrian":
-        return showStatus
-          ? notif.event_name
-            ? `Garda request sent - ${notif.status}`
-            : `Garda request sent - ${notif.status}`
-          : notif.event_name
-            ? `Garda request sent`
-            : `Garda request sent`;
+      return showStatus
+        ? notif.event_name
+          ? `Garda request for ${notif.event_name} - ${notif.status}`
+          : `Garda request sent - ${notif.status}`
+        : notif.event_name
+          ? `Garda request for ${notif.event_name}`
+          : `Garda request sent`;
       default:
         return showStatus
           ? `Unknown mode reroute request - ${notif.status}`
